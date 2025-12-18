@@ -8,101 +8,85 @@
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 20px; margin: 0; background: var(--tg-theme-bg-color); color: var(--tg-theme-text-color); min-height: 100vh; }
     h1 { text-align: center; color: var(--tg-theme-link-color); margin: 30px 0; }
-    .no-matches { text-align: center; font-size: 1.2em; color: var(--tg-theme-hint-color); margin: 40px; }
-    .card { background: var(--tg-theme-secondary-bg-color); border-radius: 16px; padding: 20px; margin: 16px 0; box-shadow: 0 4px 15px rgba(0,0,0,0.2); overflow: hidden; }
-    .photo { width: 100%; height: 200px; object-fit: cover; border-radius: 12px; margin-bottom: 16px; }
-    .no-photo { width: 100%; height: 200px; background: #333; opacity: 0.3; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 3em; margin-bottom: 16px; }
-    .name { font-size: 1.6em; font-weight: bold; margin-bottom: 8px; }
+    .card { background: var(--tg-theme-secondary-bg-color); border-radius: 16px; padding: 20px; margin: 16px 0; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+    .photo { width: 100%; height: 220px; object-fit: cover; border-radius: 12px; margin-bottom: 16px; }
+    .no-photo { width: 100%; height: 220px; background: #444; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 4em; margin-bottom: 16px; opacity: 0.4; }
+    .name { font-size: 1.6em; font-weight: bold; }
     .detail { margin: 10px 0; color: var(--tg-theme-hint-color); line-height: 1.5; }
-    .bio { font-style: italic; margin: 12px 0; }
-    .connect-btn { background: var(--tg-theme-button-color); color: var(--tg-theme-button-text-color); border: none; padding: 16px; width: 100%; border-radius: 12px; font-size: 1.3em; font-weight: bold; margin-top: 16px; cursor: pointer; }
-    .user-info { text-align: center; margin: 20px 0; padding: 14px; background: var(--tg-theme-secondary-bg-color); border-radius: 12px; font-size: 1.1em; color: var(--tg-theme-hint-color); }
-    .loading { text-align: center; font-size: 1.2em; color: var(--tg-theme-hint-color); margin: 50px; }
+    .bio { font-style: italic; }
+    .connect-btn { background: var(--tg-theme-button-color); color: var(--tg-theme-button-text-color); border: none; padding: 16px; width: 100%; border-radius: 12px; font-size: 1.3em; font-weight: bold; margin-top: 16px; }
+    .loading { text-align: center; padding: 50px; font-size: 1.2em; color: var(--tg-theme-hint-color); }
+    .user-info { text-align: center; padding: 14px; background: var(--tg-theme-secondary-bg-color); border-radius: 12px; margin: 20px 0; }
   </style>
 </head>
 <body>
-  <div class="user-info" id="user-info">Loading your matches...</div>
+  <div class="user-info" id="user-info">Loading teachers...</div>
   <h1>🔍 Find Your Teacher</h1>
-  <div id="teachers-list" class="loading">🔄 Fetching teachers...</div>
+  <div id="teachers-list" class="loading">🔄 Loading real teachers...</div>
 
   <script>
     Telegram.WebApp.ready();
     Telegram.WebApp.expand();
 
-    const user = Telegram.WebApp.initDataUnsafe.user;
-    const initData = Telegram.WebApp.initData;
+    const user = Telegram.WebApp.initDataUnsafe.user || {};
+    const studentId = user.id || "unknown";
+    const goal = new URLSearchParams(window.location.search).get('goal') || 'Speaking';
 
-    const userInfo = document.getElementById('user-info');
-    if (user) {
-      userInfo.innerText = `Hey ${user.first_name}! Finding teachers for your goal...`;
-    }
+    document.getElementById('user-info').innerText = `Hey ${user.first_name || 'Student'}! Searching for ${goal} teachers...`;
 
-    // Request real teachers from bot
-    const payload = JSON.stringify({
-      action: "get_teachers",
-      init_data: initData
-    });
-    Telegram.WebApp.sendData(payload);
+    // Fetch real teachers from public bot-generated JSON
+    fetch(`https://api.telegram.org/bot8370587190:AAHRdRZEljVbt-zQtGIG8QQxOqghVLLgc6I/getTeachers?student_id=${studentId}`)
+      .then(res => res.json())
+      .then(data => {
+        const list = document.getElementById('teachers-list');
+        list.innerHTML = '';
+        list.className = '';
 
-    // Receive data back from bot
-    Telegram.WebApp.onEvent('web_app_data_received', function(data) {
-      document.getElementById('teachers-list').innerHTML = ''; // Clear loading
-      try {
-        const response = JSON.parse(data);
-        if (response.teachers && response.teachers.length > 0) {
-          renderTeachers(response.teachers, response.student_goal);
-        } else {
-          document.getElementById('teachers-list').innerHTML = 
-            `<div class="no-matches">😔 No teachers available for <strong>${response.student_goal || 'your goal'}</strong> yet.<br><br>Be the first to add one!</div>`;
+        if (data.teachers.length === 0) {
+          list.innerHTML = `<div style="text-align:center;padding:50px;color:var(--tg-theme-hint-color);">😔 No teachers for ${goal} yet.<br>Check back soon!</div>`;
+          return;
         }
-      } catch (e) {
-        console.error("Parse error:", e);
-        document.getElementById('teachers-list').innerHTML = 
-          `<div class="no-matches">⚠️ Error loading data. Try closing and reopening the app.</div>`;
-      }
-    });
 
-    function renderTeachers(teachers, goal) {
-      const list = document.getElementById('teachers-list');
-      userInfo.innerText = `Found ${teachers.length} teacher(s) for ${goal} 🎯`;
+        document.getElementById('user-info').innerText = `Found ${data.teachers.length} teacher(s) for ${goal} 🎯`;
 
-      teachers.forEach(teacher => {
-        const card = document.createElement('div');
-        card.className = 'card';
+        data.teachers.forEach(teacher => {
+          const card = document.createElement('div');
+          card.className = 'card';
 
-        const photoHtml = teacher.photo_url 
-          ? `<img src="${teacher.photo_url}" class="photo" alt="${teacher.name}" onerror="this.style.display='none'; this.parentNode.querySelector('.no-photo').style.display='flex';">`
-          : `<div class="no-photo">👤</div>`;
+          const photoHtml = teacher.photo_url 
+            ? `<img src="${teacher.photo_url}" class="photo" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+            : '';
 
-        card.innerHTML = `
-          ${photoHtml}
-          <div class="name">🧑‍🏫 ${teacher.name}</div>
-          <div class="detail"><strong>Subjects:</strong> ${teacher.subjects.join(', ')}</div>
-          <div class="detail"><strong>Available:</strong> ${teacher.availability}</div>
-          <div class="detail bio">${teacher.bio || 'No bio yet.'}</div>
-          <button class="connect-btn" data-tid="${teacher.id}">🤝 Connect Now</button>
-        `;
-        list.appendChild(card);
-      });
-
-      // Connect buttons
-      document.querySelectorAll('.connect-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const tid = btn.dataset.tid;
-          const connectPayload = JSON.stringify({
-            action: "connect",
-            teacher_id: tid,
-            student_name: user ? (user.first_name + (user.last_name ? ' ' + user.last_name : '')) : "Student",
-            init_data: initData
-          });
-
-          Telegram.WebApp.sendData(connectPayload);
-          btn.innerText = "✅ Request Sent!";
-          btn.disabled = true;
-          btn.style.opacity = "0.7";
+          card.innerHTML = `
+            ${photoHtml}
+            <div class="${teacher.photo_url ? '' : 'no-photo'}">👤</div>
+            <div class="name">🧑‍🏫 ${teacher.name}</div>
+            <div class="detail"><strong>Subjects:</strong> ${teacher.subjects.join(', ')}</div>
+            <div class="detail"><strong>Available:</strong> ${teacher.availability}</div>
+            <div class="detail bio">${teacher.bio || 'No bio yet.'}</div>
+            <button class="connect-btn" data-tid="${teacher.id}">🤝 Connect Now</button>
+          `;
+          list.appendChild(card);
         });
+
+        // Connect buttons (still use sendData — this works!)
+        document.querySelectorAll('.connect-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const tid = btn.dataset.tid;
+            Telegram.WebApp.sendData(JSON.stringify({
+              action: "connect",
+              teacher_id: tid,
+              student_name: user.first_name || "Student"
+            }));
+            btn.innerText = "✅ Sent!";
+            btn.disabled = true;
+          });
+        });
+      })
+      .catch(err => {
+        document.getElementById('teachers-list').innerHTML = '⚠️ Error loading teachers. Try again.';
+        console.error(err);
       });
-    }
   </script>
 </body>
 </html>
