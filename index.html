@@ -8,85 +8,86 @@
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 20px; margin: 0; background: var(--tg-theme-bg-color); color: var(--tg-theme-text-color); min-height: 100vh; }
     h1 { text-align: center; color: var(--tg-theme-link-color); margin: 30px 0; }
-    .card { background: var(--tg-theme-secondary-bg-color); border-radius: 16px; padding: 20px; margin: 16px 0; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+    .card { background: var(--tg-theme-secondary-bg-color); border-radius: 16px; padding: 20px; margin: 16px 0; box-shadow: 0 4px 15px rgba(0,0,0,0.2); overflow: hidden; }
     .photo { width: 100%; height: 220px; object-fit: cover; border-radius: 12px; margin-bottom: 16px; }
-    .no-photo { width: 100%; height: 220px; background: #444; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 4em; margin-bottom: 16px; opacity: 0.4; }
-    .name { font-size: 1.6em; font-weight: bold; }
+    .no-photo { width: 100%; height: 220px; background: #333; opacity: 0.3; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 4em; margin-bottom: 16px; }
+    .name { font-size: 1.6em; font-weight: bold; margin-bottom: 8px; }
     .detail { margin: 10px 0; color: var(--tg-theme-hint-color); line-height: 1.5; }
-    .bio { font-style: italic; }
-    .connect-btn { background: var(--tg-theme-button-color); color: var(--tg-theme-button-text-color); border: none; padding: 16px; width: 100%; border-radius: 12px; font-size: 1.3em; font-weight: bold; margin-top: 16px; }
-    .loading { text-align: center; padding: 50px; font-size: 1.2em; color: var(--tg-theme-hint-color); }
-    .user-info { text-align: center; padding: 14px; background: var(--tg-theme-secondary-bg-color); border-radius: 12px; margin: 20px 0; }
+    .bio { font-style: italic; margin: 12px 0; }
+    .connect-btn { background: var(--tg-theme-button-color); color: var(--tg-theme-button-text-color); border: none; padding: 16px; width: 100%; border-radius: 12px; font-size: 1.3em; font-weight: bold; margin-top: 16px; cursor: pointer; }
+    .user-info { text-align: center; padding: 14px; background: var(--tg-theme-secondary-bg-color); border-radius: 12px; margin: 20px 0; font-size: 1.1em; }
   </style>
 </head>
 <body>
-  <div class="user-info" id="user-info">Loading teachers...</div>
+  <div class="user-info" id="user-info"></div>
   <h1>🔍 Find Your Teacher</h1>
-  <div id="teachers-list" class="loading">🔄 Loading real teachers...</div>
+  <div id="teachers-list"></div>
 
   <script>
     Telegram.WebApp.ready();
     Telegram.WebApp.expand();
 
     const user = Telegram.WebApp.initDataUnsafe.user || {};
-    const studentId = user.id || "unknown";
-    const goal = new URLSearchParams(window.location.search).get('goal') || 'Speaking';
+    document.getElementById('user-info').innerText = `Welcome, ${user.first_name || 'Student'}! 👋`;
 
-    document.getElementById('user-info').innerText = `Hey ${user.first_name || 'Student'}! Searching for ${goal} teachers...`;
+    // === ADD YOUR REAL TEACHERS HERE ===
+    const teachers = [
+      {
+        id: "123456789",  // Teacher's Telegram ID (as string)
+        name: "Alex Rivera",
+        subjects: ["Speaking", "IELTS"],
+        availability: "Evening",
+        bio: "Native UK speaker with 8+ years helping students reach Band 7+.",
+        photo_url: "https://api.telegram.org/file/bot8370587190:AAHRdRZEljVbt-zQtGIG8QQxOqghVLLgc6I/photos/file_123.jpg"  // or null
+      },
+      {
+        id: "987654321",
+        name: "Maria Chen",
+        subjects: ["Writing", "Speaking"],
+        availability: "Morning & Afternoon",
+        bio: "Certified teacher specializing in essay structure and conversation.",
+        photo_url: null
+      },
+      // Add more teachers here
+    ];
 
-    // Fetch real teachers from public bot-generated JSON
-    fetch(`https://api.telegram.org/bot8370587190:AAHRdRZEljVbt-zQtGIG8QQxOqghVLLgc6I/getTeachers?student_id=${studentId}`)
-      .then(res => res.json())
-      .then(data => {
-        const list = document.getElementById('teachers-list');
-        list.innerHTML = '';
-        list.className = '';
+    const list = document.getElementById('teachers-list');
+    if (teachers.length === 0) {
+      list.innerHTML = '<div style="text-align:center;padding:60px;color:var(--tg-theme-hint-color);">😔 No teachers available yet.</div>';
+    } else {
+      teachers.forEach(teacher => {
+        const card = document.createElement('div');
+        card.className = 'card';
 
-        if (data.teachers.length === 0) {
-          list.innerHTML = `<div style="text-align:center;padding:50px;color:var(--tg-theme-hint-color);">😔 No teachers for ${goal} yet.<br>Check back soon!</div>`;
-          return;
-        }
+        const photoHtml = teacher.photo_url 
+          ? `<img src="${teacher.photo_url}" class="photo" alt="${teacher.name}">`
+          : `<div class="no-photo">👤</div>`;
 
-        document.getElementById('user-info').innerText = `Found ${data.teachers.length} teacher(s) for ${goal} 🎯`;
-
-        data.teachers.forEach(teacher => {
-          const card = document.createElement('div');
-          card.className = 'card';
-
-          const photoHtml = teacher.photo_url 
-            ? `<img src="${teacher.photo_url}" class="photo" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
-            : '';
-
-          card.innerHTML = `
-            ${photoHtml}
-            <div class="${teacher.photo_url ? '' : 'no-photo'}">👤</div>
-            <div class="name">🧑‍🏫 ${teacher.name}</div>
-            <div class="detail"><strong>Subjects:</strong> ${teacher.subjects.join(', ')}</div>
-            <div class="detail"><strong>Available:</strong> ${teacher.availability}</div>
-            <div class="detail bio">${teacher.bio || 'No bio yet.'}</div>
-            <button class="connect-btn" data-tid="${teacher.id}">🤝 Connect Now</button>
-          `;
-          list.appendChild(card);
-        });
-
-        // Connect buttons (still use sendData — this works!)
-        document.querySelectorAll('.connect-btn').forEach(btn => {
-          btn.addEventListener('click', () => {
-            const tid = btn.dataset.tid;
-            Telegram.WebApp.sendData(JSON.stringify({
-              action: "connect",
-              teacher_id: tid,
-              student_name: user.first_name || "Student"
-            }));
-            btn.innerText = "✅ Sent!";
-            btn.disabled = true;
-          });
-        });
-      })
-      .catch(err => {
-        document.getElementById('teachers-list').innerHTML = '⚠️ Error loading teachers. Try again.';
-        console.error(err);
+        card.innerHTML = `
+          ${photoHtml}
+          <div class="name">🧑‍🏫 ${teacher.name}</div>
+          <div class="detail"><strong>Subjects:</strong> ${teacher.subjects.join(', ')}</div>
+          <div class="detail"><strong>Available:</strong> ${teacher.availability}</div>
+          <div class="detail bio">${teacher.bio}</div>
+          <button class="connect-btn" data-tid="${teacher.id}">🤝 Connect Now</button>
+        `;
+        list.appendChild(card);
       });
+
+      document.querySelectorAll('.connect-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const tid = btn.dataset.tid;
+          Telegram.WebApp.sendData(JSON.stringify({
+            action: "connect",
+            teacher_id: tid,
+            student_name: user.first_name || "Student"
+          }));
+          btn.innerText = "✅ Request Sent!";
+          btn.disabled = true;
+          btn.style.opacity = "0.7";
+        });
+      });
+    }
   </script>
 </body>
 </html>
