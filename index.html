@@ -15,308 +15,123 @@
       --btn-text: var(--tg-theme-button-text-color, #ffffff);
       --sec-bg: var(--tg-theme-secondary-bg-color, #f4f4f5);
     }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-      background-color: var(--bg-color);
-      color: var(--text-color);
-      padding-bottom: 80px;
-    }
-
-    .page { display: none; padding: 20px; animation: fadeIn 0.3s ease; }
+    body { font-family: sans-serif; margin: 0; background: var(--bg-color); color: var(--text-color); padding-bottom: 80px; }
+    .page { display: none; padding: 20px; }
     .active { display: block; }
-    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-    h1, h2 { text-align: center; margin-bottom: 20px; }
-
-    .form-group { margin-bottom: 15px; }
-    label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 0.9em; }
-    textarea, select, input {
-      width: 100%;
-      padding: 12px;
-      border-radius: 10px;
-      border: 1px solid #ccc;
-      background: var(--sec-bg);
-      color: var(--text-color);
-      box-sizing: border-box;
-      font-size: 16px;
-    }
-
-    .main-btn { background: var(--btn-color); color: var(--btn-text); border: none; padding: 15px; border-radius: 12px; font-size: 1em; width: 100%; font-weight: bold; cursor: pointer; margin: 10px 0; }
-    .main-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-    .back-btn { background: none; border: 1px solid var(--hint-color); color: var(--hint-color); padding: 10px; border-radius: 10px; width: 100%; margin-top: 10px; }
-
-    #nav-bar {
-      position: fixed;
-      bottom: 0;
-      width: 100%;
-      height: 65px;
-      display: flex;
-      background: var(--sec-bg);
-      border-top: 1px solid rgba(0,0,0,0.1);
-      justify-content: space-around;
-      align-items: center;
-      z-index: 1000;
-    }
-    .nav-item {
-      flex: 1;
-      text-align: center;
-      background: none;
-      border: none;
-      color: var(--hint-color);
-      font-size: 0.8em;
-      padding: 10px 0;
-    }
-    .nav-item.active-nav { color: var(--link-color); font-weight: bold; }
-    .nav-icon { font-size: 20px; display: block; margin-bottom: 2px; }
-
-    .card {
-      background: var(--sec-bg);
-      border-radius: 15px;
-      padding: 15px;
-      margin-bottom: 15px;
-    }
-    .badge {
-      background: var(--link-color);
-      color: white;
-      padding: 2px 8px;
-      border-radius: 5px;
-      font-size: 0.75em;
-      margin-right: 5px;
-    }
+    .card { background: var(--sec-bg); padding: 15px; border-radius: 12px; margin-bottom: 10px; }
+    .main-btn { background: var(--btn-color); color: var(--btn-text); border: none; padding: 15px; border-radius: 12px; width: 100%; font-weight: bold; margin-top: 10px; }
+    #nav-bar { position: fixed; bottom: 0; width: 100%; display: flex; background: var(--sec-bg); border-top: 1px solid #ddd; height: 60px; align-items: center; justify-content: space-around; }
+    .nav-btn { background: none; border: none; color: var(--hint-color); font-size: 12px; }
+    .nav-btn.active-nav { color: var(--link-color); font-weight: bold; }
+    textarea, select { width: 100%; padding: 10px; margin: 10px 0; border-radius: 8px; border: 1px solid #ccc; background: var(--sec-bg); color: var(--text-color); }
   </style>
 </head>
 <body>
 
   <div id="landing" class="page active">
-    <div style="text-align: center; margin-top: 40px;">
-      <span style="font-size: 60px;">🌙</span>
-      <h1>LunaTeach</h1>
-      <p style="color: var(--hint-color);">Professional English Mentoring</p>
-    </div>
-    <div style="margin-top: 50px;">
-      <button class="main-btn" onclick="setRole('student')">🎓 I want to Learn</button>
-      <button class="main-btn" onclick="setRole('teacher')">🧑‍🏫 I want to Teach</button>
-    </div>
+    <h1>🌙 LunaTeach</h1>
+    <button class="main-btn" onclick="setRole('student')">🎓 I'm a Student</button>
+    <button class="main-btn" onclick="setRole('teacher')">🧑‍🏫 I'm a Teacher</button>
   </div>
 
-  <div id="setup-profile" class="page">
-    <h2 id="setup-title">Setup Profile</h2>
-    <div id="teacher-fields" style="display:none;">
-      <div class="form-group">
-        <label>Professional Bio</label>
-        <textarea id="bio" rows="4" placeholder="Describe your experience..."></textarea>
-      </div>
-      <div class="form-group">
-        <label>Primary Subject</label>
-        <select id="subject">
-          <option>IELTS Coaching</option>
-          <option>General Speaking</option>
-          <option>Business English</option>
-        </select>
-      </div>
+  <div id="setup" class="page">
+    <h2>Setup Profile</h2>
+    <div id="student-form" style="display:none">
+        <label>Goal:</label>
+        <select id="goal"><option>IELTS</option><option>Speaking</option></select>
     </div>
-    <div id="student-fields" style="display:none;">
-      <div class="form-group">
-        <label>What is your goal?</label>
-        <select id="goal">
-          <option>Improve Speaking</option>
-          <option>Pass IELTS</option>
-          <option>Writing Skills</option>
-        </select>
-      </div>
+    <div id="teacher-form" style="display:none">
+        <label>Bio:</label>
+        <textarea id="bio" placeholder="Experience..."></textarea>
     </div>
-    <button id="setup-btn" class="main-btn" onclick="completeSetup()">Finish Setup</button>
+    <button class="main-btn" onclick="saveProfile()">Save & Continue</button>
   </div>
 
-  <div id="marketplace" class="page">
-    <h2>Teachers</h2>
-    <div id="teachers-list">
-      <p style="text-align: center; color: var(--hint-color);">Searching for mentors...</p>
-    </div>
+  <div id="market" class="page">
+    <h2>Marketplace</h2>
+    <div id="teacher-list">Loading...</div>
   </div>
 
-  <div id="requests" class="page">
-    <h2>Inbox</h2>
-    <div id="requests-content">
-      <p style="text-align: center; color: var(--hint-color);">Checking messages...</p>
-    </div>
+  <div id="me" class="page">
+    <h2>My Profile</h2>
+    <div id="profile-card" class="card"></div>
+    <button class="main-btn" style="background:red" onclick="logout()">Logout</button>
   </div>
 
-  <div id="profile-settings" class="page">
-    <h2>Settings</h2>
-    <div class="card" id="my-profile-card"></div>
-    <button class="back-btn" onclick="logout()">Logout / Switch Role</button>
-  </div>
-
-  <nav id="nav-bar" style="display: none;">
-    <button class="nav-item active-nav" onclick="showPage('marketplace', this)">
-      <span class="nav-icon">🔍</span>Find
-    </button>
-    <button class="nav-item" onclick="showPage('requests', this)">
-      <span class="nav-icon">📬</span>Inbox
-    </button>
-    <button class="nav-item" onclick="showPage('profile-settings', this)">
-      <span class="nav-icon">👤</span>Me
-    </button>
+  <nav id="nav-bar" style="display:none">
+    <button class="nav-btn active-nav" onclick="showPage('market', this)">🔍 Find</button>
+    <button class="nav-btn" onclick="showPage('me', this)">👤 Profile</button>
   </nav>
 
   <script>
     const tg = Telegram.WebApp;
-    tg.ready();
-    tg.expand();
+    const API = "https://eclipsepsycho.pythonanywhere.com/api";
+    let role = localStorage.getItem('role');
+    let profile = JSON.parse(localStorage.getItem('profile'));
 
-    // --- CONFIG ---
-    // REPLACE 'eclipsepsycho' WITH YOUR ACTUAL PYTHONANYWHERE USERNAME
-    const API_URL = "https://eclipsepsycho.pythonanywhere.com/api"; 
-
-    let userRole = localStorage.getItem('luna_role') || null;
-    let userProfile = JSON.parse(localStorage.getItem('luna_profile')) || null;
-    const user = tg.initDataUnsafe.user || { id: "123", first_name: "Tester", username: "testuser" };
-
-    function init() {
-      if (!userRole) {
-        showPage('landing');
-      } else if (!userProfile) {
-        setRole(userRole);
-      } else {
-        showPage('marketplace');
-        document.getElementById('nav-bar').style.display = 'flex';
-      }
-    }
-
-    function showPage(pageId, navEl = null) {
-      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-      document.getElementById(pageId).classList.add('active');
-
-      if (navEl) {
-        document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active-nav'));
-        navEl.classList.add('active-nav');
-      }
-
-      if (pageId === 'profile-settings') renderProfile();
-      if (pageId === 'marketplace') loadTeachers();
-      if (pageId === 'requests') loadInbox();
-    }
-
-    function setRole(role) {
-      userRole = role;
-      localStorage.setItem('luna_role', role);
-      showPage('setup-profile');
-      document.getElementById('teacher-fields').style.display = (role === 'teacher') ? 'block' : 'none';
-      document.getElementById('student-fields').style.display = (role === 'student') ? 'block' : 'none';
-    }
-
-    async function completeSetup() {
-      const btn = document.getElementById('setup-btn');
-      btn.disabled = true;
-      btn.innerText = "Saving...";
-
-      const profile = {
-        telegram_id: user.id,
-        name: user.first_name,
-        username: user.username || "anon",
-        bio: document.getElementById('bio').value || "",
-        subject: (userRole === 'teacher') ? document.getElementById('subject').value : document.getElementById('goal').value
-      };
-
-      try {
-        const response = await fetch(`${API_URL}/save_profile`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ role: userRole, profile: profile })
-        });
-
-        if (response.ok) {
-          userProfile = profile;
-          localStorage.setItem('luna_profile', JSON.stringify(profile));
-          init();
-        } else {
-          tg.showAlert("Failed to save. Is the Python server running?");
+    function showPage(id, btn) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        if(btn) {
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active-nav'));
+            btn.classList.add('active-nav');
         }
-      } catch (e) {
-        tg.showAlert("Connection Error. Check API URL.");
-      } finally {
-        btn.disabled = false;
-        btn.innerText = "Finish Setup";
-      }
+        if(id === 'market') loadTeachers();
+        if(id === 'me') renderMe();
+    }
+
+    function setRole(r) {
+        role = r;
+        localStorage.setItem('role', r);
+        showPage('setup');
+        document.getElementById('student-form').style.display = r === 'student' ? 'block' : 'none';
+        document.getElementById('teacher-form').style.display = r === 'teacher' ? 'block' : 'none';
+    }
+
+    async function saveProfile() {
+        const data = {
+            telegram_id: tg.initDataUnsafe.user?.id || "123",
+            name: tg.initDataUnsafe.user?.first_name || "Guest",
+            bio: document.getElementById('bio').value || "No bio",
+            subject: document.getElementById('goal').value || "English"
+        };
+        const res = await fetch(`${API}/save_profile`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({role: role, profile: data})
+        });
+        if(res.ok) {
+            profile = data;
+            localStorage.setItem('profile', JSON.stringify(data));
+            document.getElementById('nav-bar').style.display = 'flex';
+            showPage('market');
+        }
     }
 
     async function loadTeachers() {
-      const list = document.getElementById('teachers-list');
-      try {
-        const res = await fetch(`${API_URL}/get_teachers`);
+        const res = await fetch(`${API}/get_teachers`);
         const teachers = await res.json();
-        
-        const teacherArray = Object.values(teachers);
-        if(teacherArray.length === 0) {
-            list.innerHTML = "<p style='text-align:center;'>No teachers online yet.</p>";
-            return;
-        }
-
-        list.innerHTML = teacherArray.map(t => `
-          <div class="card">
-            <strong>${t.name}</strong> <span class="badge">${t.subject}</span>
-            <p style="font-size:0.9em; margin: 10px 0;">${t.bio}</p>
-            <button class="main-btn" style="padding:8px; font-size:0.8em;" onclick="connect('${t.telegram_id}')">Connect</button>
-          </div>
+        const list = document.getElementById('teacher-list');
+        list.innerHTML = Object.values(teachers).map(t => `
+            <div class="card">
+                <strong>${t.name}</strong> (${t.subject})<br>${t.bio}
+                <button class="main-btn" onclick="connect('${t.telegram_id}')">Connect</button>
+            </div>
         `).join('');
-      } catch (e) {
-        list.innerHTML = "<p style='text-align:center;'>Unable to load teachers.</p>";
-      }
     }
 
-    async function connect(teacherId) {
-      tg.MainButton.setText("Sending Request...").show();
-      
-      const payload = {
-          teacher_id: teacherId,
-          student_info: {
-              id: user.id,
-              name: user.first_name,
-              username: user.username || "anon"
-          }
-      };
-
-      try {
-          await fetch(`${API_URL}/send_request`, {
-              method: 'POST',
-              headers: {'Content-Type': 'application/json'},
-              body: JSON.stringify(payload)
-          });
-          tg.showAlert("Request sent! Check your inbox soon.");
-      } catch (e) {
-          tg.showAlert("Request failed to send.");
-      } finally {
-          tg.MainButton.hide();
-      }
+    function renderMe() {
+        document.getElementById('profile-card').innerHTML = `
+            <strong>${profile.name}</strong><br>Role: ${role}<br>Goal/Sub: ${profile.subject}
+        `;
     }
 
-    function renderProfile() {
-      const container = document.getElementById('my-profile-card');
-      container.innerHTML = `
-        <div style="text-align:center;">
-          <div style="font-size:40px; margin-bottom:10px;">👤</div>
-          <h3>${userProfile.name}</h3>
-          <p class="badge">${userRole.toUpperCase()}</p>
-          <p style="margin-top:15px;">${userProfile.bio || "No bio added."}</p>
-        </div>
-      `;
-    }
+    function logout() { localStorage.clear(); location.reload(); }
 
-    function logout() {
-      localStorage.clear();
-      location.reload();
+    if(profile) {
+        document.getElementById('nav-bar').style.display = 'flex';
+        showPage('market');
     }
-
-    // Placeholder for Inbox
-    function loadInbox() {
-        document.getElementById('requests-content').innerHTML = "<p style='text-align:center;'>Messaging features coming in the next update!</p>";
-    }
-
-    init();
   </script>
 </body>
 </html>
