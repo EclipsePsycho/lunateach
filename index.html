@@ -2,201 +2,280 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>LunaTeach</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     :root {
-      --bg-color: var(--tg-theme-bg-color, #fff);
-      --text-color: var(--tg-theme-text-color, #000);
+      --bg-color: var(--tg-theme-bg-color, #ffffff);
+      --text-color: var(--tg-theme-text-color, #000000);
+      --hint-color: var(--tg-theme-hint-color, #999999);
+      --link-color: var(--tg-theme-link-color, #2481cc);
       --btn-color: var(--tg-theme-button-color, #3390ec);
-      --btn-text: var(--tg-theme-button-text-color, #fff);
-      --secondary-bg: var(--tg-theme-secondary-bg-color, #f1f1f1);
+      --btn-text: var(--tg-theme-button-text-color, #ffffff);
+      --sec-bg: var(--tg-theme-secondary-bg-color, #f4f4f5);
     }
-    body { font-family: sans-serif; margin: 0; padding: 20px; background: var(--bg-color); color: var(--text-color); }
-    .page { display: none; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      padding-bottom: 80px; /* Space for Nav Bar */
+    }
+
+    .page { display: none; padding: 20px; animation: fadeIn 0.3s ease; }
     .active { display: block; }
-    h1, h2 { text-align: center; }
-    
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    h1, h2 { text-align: center; margin-bottom: 20px; }
+
+    /* Forms & Inputs */
+    .form-group { margin-bottom: 15px; }
+    label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 0.9em; }
+    textarea, select, input {
+      width: 100%;
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      background: var(--sec-bg);
+      color: var(--text-color);
+      box-sizing: border-box;
+      font-size: 16px;
+    }
+
     /* Buttons */
-    .main-btn { background: var(--btn-color); color: var(--btn-text); border: none; padding: 15px; border-radius: 12px; font-size: 1.1em; width: 100%; margin: 10px 0; cursor: pointer; font-weight: bold; }
-    .back-btn { background: transparent; color: var(--text-color); border: 1px solid var(--text-color); padding: 10px; border-radius: 8px; margin-top: 20px; width: 100%; cursor: pointer;}
-    
-    /* Inputs */
-    textarea, select { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; background: var(--secondary-bg); color: var(--text-color); border: none; box-sizing: border-box;}
-    
+    .main-btn { background: var(--btn-color); color: var(--btn-text); border: none; padding: 15px; border-radius: 12px; font-size: 1em; width: 100%; font-weight: bold; cursor: pointer; margin: 10px 0; }
+    .back-btn { background: none; border: 1px solid var(--hint-color); color: var(--hint-color); padding: 10px; border-radius: 10px; width: 100%; margin-top: 10px; }
+
+    /* Navigation Bar */
+    #nav-bar {
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+      height: 65px;
+      display: flex;
+      background: var(--sec-bg);
+      border-top: 1px solid rgba(0,0,0,0.1);
+      justify-content: space-around;
+      align-items: center;
+      z-index: 1000;
+    }
+    .nav-item {
+      flex: 1;
+      text-align: center;
+      background: none;
+      border: none;
+      color: var(--hint-color);
+      font-size: 0.8em;
+      padding: 10px 0;
+    }
+    .nav-item.active-nav { color: var(--link-color); font-weight: bold; }
+    .nav-icon { font-size: 20px; display: block; margin-bottom: 2px; }
+
     /* Cards */
-    .teacher-card { background: var(--secondary-bg); border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-    .teacher-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-    .avatar { width: 50px; height: 50px; background: #ddd; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; }
-    .tags { display: flex; gap: 5px; flex-wrap: wrap; margin: 5px 0; }
-    .tag { background: var(--btn-color); color: var(--btn-text); padding: 4px 8px; border-radius: 4px; font-size: 0.8em; opacity: 0.8; }
+    .card {
+      background: var(--sec-bg);
+      border-radius: 15px;
+      padding: 15px;
+      margin-bottom: 15px;
+    }
+    .badge {
+      background: var(--link-color);
+      color: white;
+      padding: 2px 8px;
+      border-radius: 5px;
+      font-size: 0.75em;
+      margin-right: 5px;
+    }
   </style>
 </head>
 <body>
 
   <div id="landing" class="page active">
-    <h1>🌙 LunaTeach</h1>
-    <p style="text-align:center; opacity: 0.8;">Learn English with real mentors.</p>
-    <br>
-    <button class="main-btn" onclick="chooseRole('student')">🎓 I'm a Student</button>
-    <button class="main-btn" onclick="chooseRole('teacher')">🧑‍🏫 I'm a Teacher</button>
+    <div style="text-align: center; margin-top: 40px;">
+      <span style="font-size: 60px;">🌙</span>
+      <h1>LunaTeach</h1>
+      <p style="color: var(--hint-color);">Professional English Mentoring</p>
+    </div>
+    <div style="margin-top: 50px;">
+      <button class="main-btn" onclick="setRole('student')">🎓 I want to Learn</button>
+      <button class="main-btn" onclick="setRole('teacher')">🧑‍🏫 I want to Teach</button>
+    </div>
   </div>
 
-  <div id="student-profile" class="page">
-    <h2>Your Goal</h2>
-    <p>What do you want to improve?</p>
-    <select id="student-goal">
-      <option value="Speaking">Speaking Practice</option>
-      <option value="IELTS">IELTS Preparation</option>
-      <option value="Grammar">Grammar & Writing</option>
-    </select>
-    <button class="main-btn" onclick="saveProfile('student')">Find Teachers →</button>
-    <button class="back-btn" onclick="showPage('landing')">Back</button>
-  </div>
-
-  <div id="teacher-profile" class="page">
-    <h2>Teacher Profile</h2>
-    <p>Bio (Keep it short):</p>
-    <textarea id="teacher-bio" rows="3" placeholder="Ex: IELTS expert with 5 years experience..."></textarea>
-    
-    <p>Subject:</p>
-    <select id="teacher-subject">
-      <option value="Speaking">Speaking</option>
-      <option value="IELTS">IELTS</option>
-      <option value="Business">Business English</option>
-    </select>
-
-    <p>Availability:</p>
-    <select id="teacher-availability">
-      <option>Evenings</option>
-      <option>Weekends</option>
-      <option>Flexible</option>
-    </select>
-
-    <button class="main-btn" onclick="saveProfile('teacher')">Go Live 🚀</button>
-    <button class="back-btn" onclick="showPage('landing')">Back</button>
+  <div id="setup-profile" class="page">
+    <h2 id="setup-title">Setup Profile</h2>
+    <div id="teacher-fields" style="display:none;">
+      <div class="form-group">
+        <label>Professional Bio</label>
+        <textarea id="bio" rows="4" placeholder="Describe your experience..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>Primary Subject</label>
+        <select id="subject">
+          <option>IELTS Coaching</option>
+          <option>General Speaking</option>
+          <option>Business English</option>
+        </select>
+      </div>
+    </div>
+    <div id="student-fields" style="display:none;">
+      <div class="form-group">
+        <label>What is your goal?</label>
+        <select id="goal">
+          <option>Improve Speaking</option>
+          <option>Pass IELTS</option>
+          <option>Writing Skills</option>
+        </select>
+      </div>
+    </div>
+    <button class="main-btn" onclick="completeSetup()">Finish Setup</button>
   </div>
 
   <div id="marketplace" class="page">
-    <h2>Available Teachers</h2>
+    <h2>Teachers</h2>
     <div id="teachers-list">
-      </div>
-    <button class="back-btn" onclick="showPage('landing')">Back</button>
+      <p style="text-align: center; color: var(--hint-color);">Searching for mentors...</p>
+    </div>
   </div>
 
-  <div id="teacher-dashboard" class="page">
-    <div style="text-align:center; padding-top: 20px;">
-      <div style="font-size: 50px;">✅</div>
-      <h2>You are Live!</h2>
-      <p>Your profile has been saved.</p>
-      <p>Students will see you in the marketplace. You will receive a message from the bot when a student requests a lesson.</p>
+  <div id="requests" class="page">
+    <h2>Inbox</h2>
+    <div id="requests-content">
+      <p style="text-align: center; color: var(--hint-color);">No active requests found.</p>
     </div>
-    <button class="back-btn" onclick="Telegram.WebApp.close()">Close App</button>
   </div>
+
+  <div id="profile-settings" class="page">
+    <h2>Settings</h2>
+    <div class="card" id="my-profile-card">
+      </div>
+    <button class="main-btn" onclick="editProfile()">Edit Bio</button>
+    <button class="back-btn" onclick="logout()">Logout / Switch Role</button>
+  </div>
+
+  <nav id="nav-bar" style="display: none;">
+    <button class="nav-item active-nav" onclick="showPage('marketplace', this)">
+      <span class="nav-icon">🔍</span>Find
+    </button>
+    <button class="nav-item" onclick="showPage('requests', this)">
+      <span class="nav-icon">📬</span>Inbox
+    </button>
+    <button class="nav-item" onclick="showPage('profile-settings', this)">
+      <span class="nav-icon">👤</span>Me
+    </button>
+  </nav>
 
   <script>
     const tg = Telegram.WebApp;
     tg.ready();
     tg.expand();
 
-    // User Data from Telegram
-    const user = tg.initDataUnsafe.user || { first_name: "Guest", id: 999999 };
+    let userRole = localStorage.getItem('luna_role') || null;
+    let userProfile = JSON.parse(localStorage.getItem('luna_profile')) || null;
 
-    // Navigation
-    function showPage(id) {
-      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-      document.getElementById(id).classList.add('active');
-    }
-
-    function chooseRole(role) {
-      if (role === 'student') showPage('student-profile');
-      if (role === 'teacher') showPage('teacher-profile');
-    }
-
-    // --- DATA HANDLING ---
-
-    function saveProfile(role) {
-      let profileData = {};
-
-      if (role === 'student') {
-        profileData.goal = document.getElementById('student-goal').value;
-        // After saving, go to marketplace
-        loadTeachers(); 
-        showPage('marketplace');
+    // Initialization
+    function init() {
+      if (!userRole) {
+        showPage('landing');
+      } else if (!userProfile) {
+        setRole(userRole);
       } else {
-        profileData.bio = document.getElementById('teacher-bio').value;
-        profileData.subject = document.getElementById('teacher-subject').value;
-        profileData.availability = document.getElementById('teacher-availability').value;
-        // Teacher flow ends here, send data to bot
-        sendToBot("save_profile", role, profileData);
-        showPage('teacher-dashboard');
-        return; 
+        showPage('marketplace');
+        document.getElementById('nav-bar').style.display = 'flex';
+        loadTeachers();
+      }
+    }
+
+    function showPage(pageId, navEl = null) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.getElementById(pageId).classList.add('active');
+
+      if (navEl) {
+        document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active-nav'));
+        navEl.classList.add('active-nav');
       }
 
-      // If student, we send data to bot silently to save user, but keep app open
-      sendToBot("save_profile", role, profileData, false); 
+      if (pageId === 'profile-settings') renderProfile();
+      if (pageId === 'marketplace') loadTeachers();
     }
 
-    function sendToBot(action, role, profile, close = true) {
-      const data = {
-        action: action,
-        role: role,
-        profile: profile
+    function setRole(role) {
+      userRole = role;
+      localStorage.setItem('luna_role', role);
+      showPage('setup-profile');
+      document.getElementById('teacher-fields').style.display = (role === 'teacher') ? 'block' : 'none';
+      document.getElementById('student-fields').style.display = (role === 'student') ? 'block' : 'none';
+    }
+
+    function completeSetup() {
+      const profile = {
+        name: tg.initDataUnsafe.user?.first_name || "User",
+        bio: document.getElementById('bio').value || "",
+        subject: document.getElementById('subject').value || document.getElementById('goal').value,
+        timestamp: new Date().toISOString()
       };
-      // Sending data to Bot
-      tg.sendData(JSON.stringify(data));
-      if(close) tg.close();
-    }
+      
+      userProfile = profile;
+      localStorage.setItem('luna_profile', JSON.stringify(profile));
 
-    // --- MARKETPLACE LOGIC ---
+      // Notify Bot
+      tg.sendData(JSON.stringify({
+        action: "save_profile",
+        role: userRole,
+        profile: profile
+      }));
+
+      init();
+    }
 
     function loadTeachers() {
       const list = document.getElementById('teachers-list');
-      list.innerHTML = ""; // Clear list
-
-      // NOTE: Because GitHub Pages is static, it cannot read your local JSON file.
-      // For this MVP, we are using an array here. 
-      // In production, you would fetch this from an API.
-      
-      const mockTeachers = [
-        { id: "12345", name: "Sarah J.", subject: "IELTS", bio: "Band 9 expert", avail: "Evenings" },
-        { id: "67890", name: "Mike T.", subject: "Speaking", bio: "Native speaker from UK", avail: "Flexible" },
-        // Add your own Telegram ID here to test the notification!
-        { id: String(user.id), name: "You (Test)", subject: "Testing", bio: "Test connection", avail: "Now" }
+      // Simulated Teachers for UI review
+      const teachers = [
+        {id: 1, name: "Sarah", bio: "Ex-IELTS Examiner", sub: "IELTS"},
+        {id: 2, name: "James", bio: "Native Speaker - 10y exp", sub: "Speaking"}
       ];
 
-      mockTeachers.forEach(t => {
-        const card = document.createElement('div');
-        card.className = 'teacher-card';
-        card.innerHTML = `
-          <div class="teacher-header">
-            <div class="avatar">👤</div>
-            <div>
-              <strong>${t.name}</strong><br>
-              <small>${t.avail}</small>
-            </div>
-          </div>
-          <p style="font-size:0.9em; color:#666;">${t.bio}</p>
-          <div class="tags">
-            <span class="tag">${t.subject}</span>
-          </div>
-          <button class="main-btn" style="margin-top:10px; font-size:0.9em;" onclick="connectWithTeacher('${t.id}', '${t.name}')">
-            Connect
-          </button>
-        `;
-        list.appendChild(card);
-      });
+      list.innerHTML = teachers.map(t => `
+        <div class="card">
+          <strong>${t.name}</strong> <span class="badge">${t.sub}</span>
+          <p style="font-size:0.9em; margin: 10px 0;">${t.bio}</p>
+          <button class="main-btn" style="padding:8px; font-size:0.8em;" onclick="connect('${t.id}')">Connect</button>
+        </div>
+      `).join('');
     }
 
-    function connectWithTeacher(teacherId, teacherName) {
-      // Logic: Send data to bot -> Bot notifies Teacher -> Bot confirms to Student
-      tg.sendData(JSON.stringify({
-        action: "send_request",
-        teacher_id: teacherId,
-        student_name: user.first_name
-      }));
+    function renderProfile() {
+      const container = document.getElementById('my-profile-card');
+      container.innerHTML = `
+        <div style="text-align:center;">
+          <div style="font-size:40px; margin-bottom:10px;">👤</div>
+          <h3>${userProfile.name}</h3>
+          <p class="badge">${userRole.toUpperCase()}</p>
+          <p style="margin-top:15px;">${userProfile.bio || "No bio added."}</p>
+          <small style="color:var(--hint-color)">Status: Active</small>
+        </div>
+      `;
     }
+
+    function connect(id) {
+      tg.MainButton.setText("Sending Request...").show();
+      setTimeout(() => {
+        tg.MainButton.hide();
+        tg.showAlert("Request Sent! The teacher will notify you.");
+        tg.sendData(JSON.stringify({ action: "send_request", teacher_id: id }));
+      }, 1000);
+    }
+
+    function logout() {
+      localStorage.clear();
+      location.reload();
+    }
+
+    init();
   </script>
 </body>
 </html>
