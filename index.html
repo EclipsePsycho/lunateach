@@ -9,53 +9,68 @@
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: var(--tg-theme-bg-color); color: var(--tg-theme-text-color); min-height: 100vh; }
     .page { display: none; }
     .active { display: block; }
-    button { background: var(--tg-theme-button-color); color: var(--tg-theme-button-text-color); border: none; padding: 16px; border-radius: 12px; font-size: 1.2em; width: 100%; margin: 10px 0; }
+    h1, h2 { text-align: center; }
+    button { background: var(--tg-theme-button-color); color: var(--tg-theme-button-text-color); border: none; padding: 16px; border-radius: 12px; font-size: 1.2em; width: 100%; margin: 10px 0; cursor: pointer; }
     input, textarea, select { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; background: var(--tg-theme-secondary-bg-color); color: var(--tg-theme-text-color); border: none; }
-    .card { background: var(--tg-theme-secondary-bg-color); border-radius: 16px; padding: 20px; margin: 16px 0; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
-    .photo-preview { width: 100%; height: 200px; object-fit: cover; border-radius: 12px; margin: 10px 0; }
+    .card { background: var(--tg-theme-secondary-bg-color); border-radius: 16px; padding: 20px; margin: 16px 0; box-shadow: 0 4px 15px rgba(0,0,0,0.2); text-align: center; }
+    .photo { width: 100%; height: 250px; object-fit: cover; border-radius: 12px; margin-bottom: 16px; }
+    .no-photo { width: 100%; height: 250px; background: #333; opacity: 0.3; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 4em; margin-bottom: 16px; }
+    .back-btn { background: var(--tg-theme-hint-color); font-size: 1em; padding: 10px; }
   </style>
 </head>
 <body>
-  <!-- Landing Page -->
+
+  <!-- Landing -->
   <div id="landing" class="page active">
-    <h1 style="text-align:center;">🌙 LunaTeach</h1>
-    <p style="text-align:center; font-size:1.2em;">Master English with the perfect teacher</p>
+    <h1>🌙 LunaTeach</h1>
+    <p style="text-align:center;">Connect with teachers or students instantly</p>
     <button onclick="chooseRole('student')">🎓 I'm a Student</button>
     <button onclick="chooseRole('teacher')">🧑‍🏫 I'm a Teacher</button>
   </div>
 
   <!-- Student Profile -->
   <div id="student-profile" class="page">
-    <h2>Complete Your Profile</h2>
-    <select id="student-goal">
-      <option value="Speaking">🗣 Speaking</option>
-      <option value="Writing">✍️ Writing</option>
-      <option value="IELTS">📖 IELTS</option>
-    </select>
-    <button onclick="saveProfile('student')">Save & Find Teachers →</button>
-  </div>
-
-  <!-- Teacher Profile -->
-  <div id="teacher-profile" class="page">
-    <h2>Build Your Teacher Profile</h2>
-    <input type="text" id="teacher-bio" placeholder="Your bio...">
-    <select id="teacher-subjects" multiple>
+    <h2>Your Learning Goal</h2>
+    <select id="goal">
       <option>Speaking</option>
       <option>Writing</option>
       <option>IELTS</option>
     </select>
-    <select id="teacher-availability">
+    <button onclick="saveProfile('student')">Continue →</button>
+  </div>
+
+  <!-- Teacher Profile -->
+  <div id="teacher-profile" class="page">
+    <h2>Tell Students About You</h2>
+    <textarea id="bio" placeholder="Your experience, style, what makes you unique..."></textarea>
+    <p><strong>Subjects you teach:</strong></p>
+    <select id="subjects" multiple size="3">
+      <option>Speaking</option>
+      <option>Writing</option>
+      <option>IELTS</option>
+    </select>
+    <p><strong>Availability:</strong></p>
+    <select id="availability">
       <option>Morning</option>
       <option>Afternoon</option>
       <option>Evening</option>
+      <option>Flexible</option>
     </select>
-    <button onclick="saveProfile('teacher')">Save Profile →</button>
+    <button onclick="saveProfile('teacher')">Save & Go Online →</button>
   </div>
 
-  <!-- Student Marketplace (placeholder for now) -->
-  <div id="marketplace" class="page">
-    <h2>Your Teachers</h2>
-    <div id="teachers-list">Loading matches...</div>
+  <!-- Student Marketplace -->
+  <div id="student-market" class="page">
+    <h2>Available Teachers</h2>
+    <div id="teachers-list">Loading...</div>
+    <button class="back-btn" onclick="showPage('landing')">← Back</button>
+  </div>
+
+  <!-- Teacher Dashboard -->
+  <div id="teacher-dashboard" class="page">
+    <h2>Your Student Requests</h2>
+    <div id="requests-list">No requests yet.</div>
+    <button class="back-btn" onclick="showPage('landing')">← Back</button>
   </div>
 
   <script>
@@ -63,23 +78,33 @@
     Telegram.WebApp.expand();
 
     const user = Telegram.WebApp.initDataUnsafe.user || {};
+    let myRole = null;
+    let allTeachers = [];
+    let myRequests = [];
 
     function chooseRole(role) {
-      document.getElementById('landing').classList.remove('active');
-      document.getElementById(role + '-profile').classList.add('active');
+      myRole = role;
+      showPage(role + '-profile');
+    }
+
+    function showPage(id) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+
+      if (id === 'student-market') loadTeachers();
+      if (id === 'teacher-dashboard') loadRequests();
     }
 
     function saveProfile(role) {
       let profile = {};
-      if (role === "student") {
-        profile.goal = document.getElementById('student-goal').value;
-        // Later: go to marketplace
-        document.getElementById('student-profile').classList.remove('active');
-        document.getElementById('marketplace').classList.add('active');
+      if (role === 'student') {
+        profile.goal = document.getElementById('goal').value;
+        showPage('student-market');
       } else {
-        profile.bio = document.getElementById('teacher-bio').value;
-        profile.subjects = Array.from(document.getElementById('teacher-subjects').selectedOptions).map(o => o.value);
-        profile.availability = document.getElementById('teacher-availability').value;
+        profile.bio = document.getElementById('bio').value;
+        profile.subjects = Array.from(document.getElementById('subjects').selectedOptions).map(o => o.value);
+        profile.availability = document.getElementById('availability').value;
+        showPage('teacher-dashboard');
       }
 
       Telegram.WebApp.sendData(JSON.stringify({
@@ -89,7 +114,67 @@
       }));
     }
 
-    // Later: Load teachers dynamically here
+    function loadTeachers() {
+      Telegram.WebApp.sendData(JSON.stringify({ action: "get_all_data" }));
+    }
+
+    function loadRequests() {
+      Telegram.WebApp.sendData(JSON.stringify({ action: "get_all_data" }));
+    }
+
+    Telegram.WebApp.onEvent('web_app_data_received', (data) => {
+      const res = JSON.parse(data);
+      allTeachers = Object.entries(res.teachers || {}).map(([id, t]) => ({id, ...t}));
+
+      if (myRole === 'student') {
+        const goal = (res.students || {})[user.id]?.goal || "Speaking";
+        const matches = allTeachers.filter(t => t.subjects.includes(goal));
+        renderTeachers(matches);
+      } else if (myRole === 'teacher') {
+        myRequests = res.my_requests || [];
+        renderRequests(myRequests);
+      }
+    });
+
+    function renderTeachers(teachers) {
+      const list = document.getElementById('teachers-list');
+      if (teachers.length === 0) {
+        list.innerHTML = "<p>No teachers available for your goal yet.</p>";
+        return;
+      }
+      list.innerHTML = teachers.map(t => `
+        <div class="card">
+          ${t.photo_url ? `<img src="${t.photo_url}" class="photo">` : `<div class="no-photo">👤</div>`}
+          <h3>${t.name}</h3>
+          <p><strong>Teaches:</strong> ${t.subjects.join(', ')}</p>
+          <p><strong>Available:</strong> ${t.availability}</p>
+          <p><i>${t.bio || 'No bio'}</i></p>
+          <button onclick="connect('${t.id}', '${t.name}')">🤝 Connect</button>
+        </div>
+      `).join('');
+    }
+
+    function renderRequests(requests) {
+      const list = document.getElementById('requests-list');
+      if (requests.length === 0) {
+        list.innerHTML = "<p>No requests yet. Share your profile!</p>";
+        return;
+      }
+      list.innerHTML = requests.map(r => `
+        <div class="card">
+          <p><strong>${r.student_name}</strong> (@${r.username}) wants to learn with you!</p>
+          <button onclick="Telegram.WebApp.openTelegramLink('https://t.me/${r.username}')">Message Them</button>
+        </div>
+      `).join('');
+    }
+
+    function connect(teacherId, teacherName) {
+      Telegram.WebApp.sendData(JSON.stringify({
+        action: "send_request",
+        teacher_id: teacherId,
+        student_name: user.first_name
+      }));
+    }
   </script>
 </body>
 </html>
