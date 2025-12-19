@@ -1,173 +1,124 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LunaTeach</title>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      margin: 0;
-      padding: 20px;
-      background: var(--tg-theme-bg-color);
-      color: var(--tg-theme-text-color);
-      min-height: 100vh;
-      box-sizing: border-box;
-    }
-    h1 {
-      text-align: center;
-      color: var(--tg-theme-link-color);
-      margin: 30px 0;
-    }
-    .card {
-      background: var(--tg-theme-secondary-bg-color);
-      border-radius: 16px;
-      padding: 20px;
-      margin: 16px 0;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-      text-align: center;
-    }
-    .photo {
-      width: 100%;
-      height: 220px;
-      object-fit: cover;
-      border-radius: 12px;
-      margin-bottom: 16px;
-    }
-    .no-photo {
-      width: 100%;
-      height: 220px;
-      background: #333;
-      opacity: 0.3;
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 4em;
-      margin-bottom: 16px;
-    }
-    .name {
-      font-size: 1.6em;
-      font-weight: bold;
-      margin: 10px 0;
-    }
-    .detail {
-      margin: 10px 0;
-      color: var(--tg-theme-hint-color);
-      line-height: 1.5;
-    }
-    .bio {
-      font-style: italic;
-      margin: 15px 0;
-    }
-    .connect-btn {
-      background: var(--tg-theme-button-color);
-      color: var(--tg-theme-button-text-color);
-      border: none;
-      padding: 16px;
-      width: 100%;
-      border-radius: 12px;
-      font-size: 1.3em;
-      font-weight: bold;
-      margin-top: 16px;
-      cursor: pointer;
-    }
-    .user-info {
-      text-align: center;
-      padding: 14px;
-      background: var(--tg-theme-secondary-bg-color);
-      border-radius: 12px;
-      margin: 20px 0;
-      font-size: 1.1em;
-    }
-  </style>
-</head>
-<body>
-  <div class="user-info" id="user-info">Welcome!</div>
-  <h1>🔍 Find Your Teacher</h1>
-  <div id="teachers-list"></div>
+import json
+import logging
+import os
+from datetime import datetime
+from telegram import Update, WebAppInfo, KeyboardButton, ReplyKeyboardMarkup
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, MessageHandler, filters
 
-  <script>
-    Telegram.WebApp.ready();
-    Telegram.WebApp.expand();
+# --- CONFIGURATION ---
+TOKEN = "8370587190:AAHRdRZEljVbt-zQtGIG8QQxOqghVLLgc6I"
+# Make sure this URL matches your GitHub Pages link exactly
+MINI_APP_URL = "https://eclipsepsycho.github.io/lunateach/"
 
-    const user = Telegram.WebApp.initDataUnsafe.user || {};
-    document.getElementById('user-info').innerText = 
-      `Hey ${user.first_name || 'Student'}! Here are your available teachers 👇`;
+# Files
+STUDENTS_FILE = "students.json"
+TEACHERS_FILE = "teachers.json"
+REQUESTS_FILE = "requests.json"
 
-    // === HARD-CODED REAL TEACHERS ===
-    // Add / edit teachers here. Use their real Telegram user ID as "id"
-    // For photos: upload photo in bot → get permanent URL from logs → paste here
-    const teachers = [
-      {
-        id: "123456789", // Replace with real teacher Telegram ID
-        name: "Alex Rivera",
-        subjects: ["Speaking", "IELTS"],
-        availability: "Evening",
-        bio: "Native UK speaker with 8+ years helping students reach Band 7+.",
-        photo_url: null // Replace with "https://api.telegram.org/file/bot.../photo.jpg" if you have one
-      },
-      {
-        id: "987654321",
-        name: "Maria Chen",
-        subjects: ["Writing", "Speaking"],
-        availability: "Morning & Afternoon",
-        bio: "Certified teacher specializing in essay structure and fluent conversation.",
-        photo_url: null
-      },
-      {
-        id: "555666777",
-        name: "John Kim",
-        subjects: ["IELTS", "Writing"],
-        availability: "Evening",
-        bio: "Former IELTS examiner. I know exactly what they look for!",
-        photo_url: null
-      }
-      // Add more teachers as needed
-    ];
+logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=logging.INFO)
 
-    const list = document.getElementById('teachers-list');
+# --- HELPER FUNCTIONS ---
+def load_data(file):
+    if not os.path.exists(file):
+        return {}
+    try:
+        with open(file, "r") as f:
+            return json.load(f)
+    except Exception as e:
+        logging.error(f"Error loading {file}: {e}")
+        return {}
 
-    if (teachers.length === 0) {
-      list.innerHTML = '<p style="text-align:center; padding:50px;">😔 No teachers available yet. Check back soon!</p>';
-    } else {
-      teachers.forEach(teacher => {
-        const card = document.createElement('div');
-        card.className = 'card';
+def save_data(file, data):
+    with open(file, "w") as f:
+        json.dump(data, f, indent=4)
 
-        const photoHtml = teacher.photo_url 
-          ? `<img src="${teacher.photo_url}" class="photo" alt="${teacher.name}">`
-          : `<div class="no-photo">👤</div>`;
+# --- BOT HANDLERS ---
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    reply_kb = ReplyKeyboardMarkup(
+        [[KeyboardButton("🚀 Open LunaTeach", web_app=WebAppInfo(url=MINI_APP_URL))]],
+        resize_keyboard=True
+    )
+    await update.message.reply_text(
+        "🌙 *LunaTeach*\n\nMaster English with real teachers.\nTap below to launch the app:",
+        parse_mode="Markdown",
+        reply_markup=reply_kb
+    )
 
-        card.innerHTML = `
-          ${photoHtml}
-          <div class="name">🧑‍🏫 ${teacher.name}</div>
-          <div class="detail"><strong>Subjects:</strong> ${teacher.subjects.join(', ')}</div>
-          <div class="detail"><strong>Available:</strong> ${teacher.availability}</div>
-          <div class="detail bio">${teacher.bio}</div>
-          <button class="connect-btn" data-tid="${teacher.id}">🤝 Connect Now</button>
-        `;
+async def handle_web_app_data(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message or not update.message.web_app_data:
+        return
 
-        list.appendChild(card);
-      });
-    }
+    data = update.message.web_app_data.data
+    user = update.effective_user
+    uid = str(user.id)
+    username = user.username or "NoUsername"
+    first_name = user.first_name
 
-    // Connect button handler — works perfectly
-    document.querySelectorAll('.connect-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const tid = btn.dataset.tid;
-        Telegram.WebApp.sendData(JSON.stringify({
-          action: "send_request",
-          teacher_id: tid,
-          student_name: user.first_name || "Student"
-        }));
+    try:
+        payload = json.loads(data)
+        action = payload.get("action")
+        
+        students = load_data(STUDENTS_FILE)
+        teachers = load_data(TEACHERS_FILE)
+        requests = load_data(REQUESTS_FILE)
 
-        btn.innerText = "✅ Request Sent!";
-        btn.disabled = true;
-        btn.style.opacity = "0.7";
-      });
-    });
-  </script>
-</body>
-</html>
+        # --- SCENARIO 1: SAVE PROFILE ---
+        if action == "save_profile":
+            role = payload["role"]
+            profile = payload["profile"]
+            
+            # Inject Telegram data into the profile
+            profile["telegram_id"] = uid
+            profile["name"] = first_name
+            profile["username"] = username
+            
+            if role == "student":
+                students[uid] = profile
+                save_data(STUDENTS_FILE, students)
+                await update.message.reply_text(f"✅ Student profile saved! ({profile['goal']})")
+            else:
+                teachers[uid] = profile
+                save_data(TEACHERS_FILE, teachers)
+                await update.message.reply_text("✅ Teacher profile live! Students can now see you.")
+
+        # --- SCENARIO 2: SEND REQUEST ---
+        elif action == "send_request":
+            teacher_id = str(payload["teacher_id"]) # Ensure ID is string
+            student_name = payload["student_name"]
+
+            # Save to requests database
+            if teacher_id not in requests:
+                requests[teacher_id] = []
+            
+            requests[teacher_id].append({
+                "student_id": uid,
+                "student_name": student_name,
+                "username": username,
+                "timestamp": datetime.now().isoformat()
+            })
+            save_data(REQUESTS_FILE, requests)
+
+            # 1. Notify the Student
+            await update.message.reply_text(f"✅ Request sent to teacher!")
+            
+            # 2. Notify the Teacher (if they have started the bot)
+            try:
+                await context.bot.send_message(
+                    chat_id=int(teacher_id),
+                    text=f"🔔 *New Student Request!*\n\n👤 {student_name} (@{username})\nwants to connect.\n\nCheck your schedule!",
+                    parse_mode="Markdown"
+                )
+            except Exception as e:
+                logging.warning(f"Could not message teacher {teacher_id}: {e}")
+
+    except Exception as e:
+        logging.error(f"Bot Logic Error: {e}")
+        await update.message.reply_text("⚠️ Error processing data.")
+
+if __name__ == "__main__":
+    app = ApplicationBuilder().token(TOKEN).build()
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(MessageHandler(filters.StatusUpdate.WEB_APP_DATA, handle_web_app_data))
+    
+    print("🚀 LunaTeach Bot is RUNNING...")
+    app.run_polling(drop_pending_updates=True)
