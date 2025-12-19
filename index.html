@@ -1,124 +1,202 @@
-import json
-import logging
-import os
-from datetime import datetime
-from telegram import Update, WebAppInfo, KeyboardButton, ReplyKeyboardMarkup
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, MessageHandler, filters
-
-# --- CONFIGURATION ---
-TOKEN = "8370587190:AAHRdRZEljVbt-zQtGIG8QQxOqghVLLgc6I"
-# Make sure this URL matches your GitHub Pages link exactly
-MINI_APP_URL = "https://eclipsepsycho.github.io/lunateach/"
-
-# Files
-STUDENTS_FILE = "students.json"
-TEACHERS_FILE = "teachers.json"
-REQUESTS_FILE = "requests.json"
-
-logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=logging.INFO)
-
-# --- HELPER FUNCTIONS ---
-def load_data(file):
-    if not os.path.exists(file):
-        return {}
-    try:
-        with open(file, "r") as f:
-            return json.load(f)
-    except Exception as e:
-        logging.error(f"Error loading {file}: {e}")
-        return {}
-
-def save_data(file, data):
-    with open(file, "w") as f:
-        json.dump(data, f, indent=4)
-
-# --- BOT HANDLERS ---
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    reply_kb = ReplyKeyboardMarkup(
-        [[KeyboardButton("🚀 Open LunaTeach", web_app=WebAppInfo(url=MINI_APP_URL))]],
-        resize_keyboard=True
-    )
-    await update.message.reply_text(
-        "🌙 *LunaTeach*\n\nMaster English with real teachers.\nTap below to launch the app:",
-        parse_mode="Markdown",
-        reply_markup=reply_kb
-    )
-
-async def handle_web_app_data(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not update.message or not update.message.web_app_data:
-        return
-
-    data = update.message.web_app_data.data
-    user = update.effective_user
-    uid = str(user.id)
-    username = user.username or "NoUsername"
-    first_name = user.first_name
-
-    try:
-        payload = json.loads(data)
-        action = payload.get("action")
-        
-        students = load_data(STUDENTS_FILE)
-        teachers = load_data(TEACHERS_FILE)
-        requests = load_data(REQUESTS_FILE)
-
-        # --- SCENARIO 1: SAVE PROFILE ---
-        if action == "save_profile":
-            role = payload["role"]
-            profile = payload["profile"]
-            
-            # Inject Telegram data into the profile
-            profile["telegram_id"] = uid
-            profile["name"] = first_name
-            profile["username"] = username
-            
-            if role == "student":
-                students[uid] = profile
-                save_data(STUDENTS_FILE, students)
-                await update.message.reply_text(f"✅ Student profile saved! ({profile['goal']})")
-            else:
-                teachers[uid] = profile
-                save_data(TEACHERS_FILE, teachers)
-                await update.message.reply_text("✅ Teacher profile live! Students can now see you.")
-
-        # --- SCENARIO 2: SEND REQUEST ---
-        elif action == "send_request":
-            teacher_id = str(payload["teacher_id"]) # Ensure ID is string
-            student_name = payload["student_name"]
-
-            # Save to requests database
-            if teacher_id not in requests:
-                requests[teacher_id] = []
-            
-            requests[teacher_id].append({
-                "student_id": uid,
-                "student_name": student_name,
-                "username": username,
-                "timestamp": datetime.now().isoformat()
-            })
-            save_data(REQUESTS_FILE, requests)
-
-            # 1. Notify the Student
-            await update.message.reply_text(f"✅ Request sent to teacher!")
-            
-            # 2. Notify the Teacher (if they have started the bot)
-            try:
-                await context.bot.send_message(
-                    chat_id=int(teacher_id),
-                    text=f"🔔 *New Student Request!*\n\n👤 {student_name} (@{username})\nwants to connect.\n\nCheck your schedule!",
-                    parse_mode="Markdown"
-                )
-            except Exception as e:
-                logging.warning(f"Could not message teacher {teacher_id}: {e}")
-
-    except Exception as e:
-        logging.error(f"Bot Logic Error: {e}")
-        await update.message.reply_text("⚠️ Error processing data.")
-
-if __name__ == "__main__":
-    app = ApplicationBuilder().token(TOKEN).build()
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(MessageHandler(filters.StatusUpdate.WEB_APP_DATA, handle_web_app_data))
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LunaTeach</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root {
+      --bg-color: var(--tg-theme-bg-color, #fff);
+      --text-color: var(--tg-theme-text-color, #000);
+      --btn-color: var(--tg-theme-button-color, #3390ec);
+      --btn-text: var(--tg-theme-button-text-color, #fff);
+      --secondary-bg: var(--tg-theme-secondary-bg-color, #f1f1f1);
+    }
+    body { font-family: sans-serif; margin: 0; padding: 20px; background: var(--bg-color); color: var(--text-color); }
+    .page { display: none; }
+    .active { display: block; }
+    h1, h2 { text-align: center; }
     
-    print("🚀 LunaTeach Bot is RUNNING...")
-    app.run_polling(drop_pending_updates=True)
+    /* Buttons */
+    .main-btn { background: var(--btn-color); color: var(--btn-text); border: none; padding: 15px; border-radius: 12px; font-size: 1.1em; width: 100%; margin: 10px 0; cursor: pointer; font-weight: bold; }
+    .back-btn { background: transparent; color: var(--text-color); border: 1px solid var(--text-color); padding: 10px; border-radius: 8px; margin-top: 20px; width: 100%; cursor: pointer;}
+    
+    /* Inputs */
+    textarea, select { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; background: var(--secondary-bg); color: var(--text-color); border: none; box-sizing: border-box;}
+    
+    /* Cards */
+    .teacher-card { background: var(--secondary-bg); border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    .teacher-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .avatar { width: 50px; height: 50px; background: #ddd; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; }
+    .tags { display: flex; gap: 5px; flex-wrap: wrap; margin: 5px 0; }
+    .tag { background: var(--btn-color); color: var(--btn-text); padding: 4px 8px; border-radius: 4px; font-size: 0.8em; opacity: 0.8; }
+  </style>
+</head>
+<body>
+
+  <div id="landing" class="page active">
+    <h1>🌙 LunaTeach</h1>
+    <p style="text-align:center; opacity: 0.8;">Learn English with real mentors.</p>
+    <br>
+    <button class="main-btn" onclick="chooseRole('student')">🎓 I'm a Student</button>
+    <button class="main-btn" onclick="chooseRole('teacher')">🧑‍🏫 I'm a Teacher</button>
+  </div>
+
+  <div id="student-profile" class="page">
+    <h2>Your Goal</h2>
+    <p>What do you want to improve?</p>
+    <select id="student-goal">
+      <option value="Speaking">Speaking Practice</option>
+      <option value="IELTS">IELTS Preparation</option>
+      <option value="Grammar">Grammar & Writing</option>
+    </select>
+    <button class="main-btn" onclick="saveProfile('student')">Find Teachers →</button>
+    <button class="back-btn" onclick="showPage('landing')">Back</button>
+  </div>
+
+  <div id="teacher-profile" class="page">
+    <h2>Teacher Profile</h2>
+    <p>Bio (Keep it short):</p>
+    <textarea id="teacher-bio" rows="3" placeholder="Ex: IELTS expert with 5 years experience..."></textarea>
+    
+    <p>Subject:</p>
+    <select id="teacher-subject">
+      <option value="Speaking">Speaking</option>
+      <option value="IELTS">IELTS</option>
+      <option value="Business">Business English</option>
+    </select>
+
+    <p>Availability:</p>
+    <select id="teacher-availability">
+      <option>Evenings</option>
+      <option>Weekends</option>
+      <option>Flexible</option>
+    </select>
+
+    <button class="main-btn" onclick="saveProfile('teacher')">Go Live 🚀</button>
+    <button class="back-btn" onclick="showPage('landing')">Back</button>
+  </div>
+
+  <div id="marketplace" class="page">
+    <h2>Available Teachers</h2>
+    <div id="teachers-list">
+      </div>
+    <button class="back-btn" onclick="showPage('landing')">Back</button>
+  </div>
+
+  <div id="teacher-dashboard" class="page">
+    <div style="text-align:center; padding-top: 20px;">
+      <div style="font-size: 50px;">✅</div>
+      <h2>You are Live!</h2>
+      <p>Your profile has been saved.</p>
+      <p>Students will see you in the marketplace. You will receive a message from the bot when a student requests a lesson.</p>
+    </div>
+    <button class="back-btn" onclick="Telegram.WebApp.close()">Close App</button>
+  </div>
+
+  <script>
+    const tg = Telegram.WebApp;
+    tg.ready();
+    tg.expand();
+
+    // User Data from Telegram
+    const user = tg.initDataUnsafe.user || { first_name: "Guest", id: 999999 };
+
+    // Navigation
+    function showPage(id) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+
+    function chooseRole(role) {
+      if (role === 'student') showPage('student-profile');
+      if (role === 'teacher') showPage('teacher-profile');
+    }
+
+    // --- DATA HANDLING ---
+
+    function saveProfile(role) {
+      let profileData = {};
+
+      if (role === 'student') {
+        profileData.goal = document.getElementById('student-goal').value;
+        // After saving, go to marketplace
+        loadTeachers(); 
+        showPage('marketplace');
+      } else {
+        profileData.bio = document.getElementById('teacher-bio').value;
+        profileData.subject = document.getElementById('teacher-subject').value;
+        profileData.availability = document.getElementById('teacher-availability').value;
+        // Teacher flow ends here, send data to bot
+        sendToBot("save_profile", role, profileData);
+        showPage('teacher-dashboard');
+        return; 
+      }
+
+      // If student, we send data to bot silently to save user, but keep app open
+      sendToBot("save_profile", role, profileData, false); 
+    }
+
+    function sendToBot(action, role, profile, close = true) {
+      const data = {
+        action: action,
+        role: role,
+        profile: profile
+      };
+      // Sending data to Bot
+      tg.sendData(JSON.stringify(data));
+      if(close) tg.close();
+    }
+
+    // --- MARKETPLACE LOGIC ---
+
+    function loadTeachers() {
+      const list = document.getElementById('teachers-list');
+      list.innerHTML = ""; // Clear list
+
+      // NOTE: Because GitHub Pages is static, it cannot read your local JSON file.
+      // For this MVP, we are using an array here. 
+      // In production, you would fetch this from an API.
+      
+      const mockTeachers = [
+        { id: "12345", name: "Sarah J.", subject: "IELTS", bio: "Band 9 expert", avail: "Evenings" },
+        { id: "67890", name: "Mike T.", subject: "Speaking", bio: "Native speaker from UK", avail: "Flexible" },
+        // Add your own Telegram ID here to test the notification!
+        { id: String(user.id), name: "You (Test)", subject: "Testing", bio: "Test connection", avail: "Now" }
+      ];
+
+      mockTeachers.forEach(t => {
+        const card = document.createElement('div');
+        card.className = 'teacher-card';
+        card.innerHTML = `
+          <div class="teacher-header">
+            <div class="avatar">👤</div>
+            <div>
+              <strong>${t.name}</strong><br>
+              <small>${t.avail}</small>
+            </div>
+          </div>
+          <p style="font-size:0.9em; color:#666;">${t.bio}</p>
+          <div class="tags">
+            <span class="tag">${t.subject}</span>
+          </div>
+          <button class="main-btn" style="margin-top:10px; font-size:0.9em;" onclick="connectWithTeacher('${t.id}', '${t.name}')">
+            Connect
+          </button>
+        `;
+        list.appendChild(card);
+      });
+    }
+
+    function connectWithTeacher(teacherId, teacherName) {
+      // Logic: Send data to bot -> Bot notifies Teacher -> Bot confirms to Student
+      tg.sendData(JSON.stringify({
+        action: "send_request",
+        teacher_id: teacherId,
+        student_name: user.first_name
+      }));
+    }
+  </script>
+</body>
+</html>
