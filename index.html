@@ -6,174 +6,168 @@
   <title>LunaTeach</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: var(--tg-theme-bg-color); color: var(--tg-theme-text-color); min-height: 100vh; }
-    .page { display: none; }
-    .active { display: block; }
-    h1, h2 { text-align: center; }
-    button { background: var(--tg-theme-button-color); color: var(--tg-theme-button-text-color); border: none; padding: 16px; border-radius: 12px; font-size: 1.2em; width: 100%; margin: 10px 0; cursor: pointer; }
-    input, textarea, select { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; background: var(--tg-theme-secondary-bg-color); color: var(--tg-theme-text-color); border: none; }
-    .card { background: var(--tg-theme-secondary-bg-color); border-radius: 16px; padding: 20px; margin: 16px 0; box-shadow: 0 4px 15px rgba(0,0,0,0.2); text-align: center; }
-    .photo { width: 100%; height: 250px; object-fit: cover; border-radius: 12px; margin-bottom: 16px; }
-    .no-photo { width: 100%; height: 250px; background: #333; opacity: 0.3; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 4em; margin-bottom: 16px; }
-    .back-btn { background: var(--tg-theme-hint-color); font-size: 1em; padding: 10px; margin-top: 20px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: var(--tg-theme-bg-color);
+      color: var(--tg-theme-text-color);
+      min-height: 100vh;
+      box-sizing: border-box;
+    }
+    h1 {
+      text-align: center;
+      color: var(--tg-theme-link-color);
+      margin: 30px 0;
+    }
+    .card {
+      background: var(--tg-theme-secondary-bg-color);
+      border-radius: 16px;
+      padding: 20px;
+      margin: 16px 0;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+      text-align: center;
+    }
+    .photo {
+      width: 100%;
+      height: 220px;
+      object-fit: cover;
+      border-radius: 12px;
+      margin-bottom: 16px;
+    }
+    .no-photo {
+      width: 100%;
+      height: 220px;
+      background: #333;
+      opacity: 0.3;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 4em;
+      margin-bottom: 16px;
+    }
+    .name {
+      font-size: 1.6em;
+      font-weight: bold;
+      margin: 10px 0;
+    }
+    .detail {
+      margin: 10px 0;
+      color: var(--tg-theme-hint-color);
+      line-height: 1.5;
+    }
+    .bio {
+      font-style: italic;
+      margin: 15px 0;
+    }
+    .connect-btn {
+      background: var(--tg-theme-button-color);
+      color: var(--tg-theme-button-text-color);
+      border: none;
+      padding: 16px;
+      width: 100%;
+      border-radius: 12px;
+      font-size: 1.3em;
+      font-weight: bold;
+      margin-top: 16px;
+      cursor: pointer;
+    }
+    .user-info {
+      text-align: center;
+      padding: 14px;
+      background: var(--tg-theme-secondary-bg-color);
+      border-radius: 12px;
+      margin: 20px 0;
+      font-size: 1.1em;
+    }
   </style>
 </head>
 <body>
-
-  <!-- Landing -->
-  <div id="landing" class="page active">
-    <h1>🌙 LunaTeach</h1>
-    <p style="text-align:center; font-size:1.1em;">Master English — Speaking, Writing, IELTS</p>
-    <button onclick="chooseRole('student')">🎓 I'm a Student</button>
-    <button onclick="chooseRole('teacher')">🧑‍🏫 I'm a Teacher</button>
-  </div>
-
-  <!-- Student Profile -->
-  <div id="student-profile" class="page">
-    <h2>Your Learning Goal</h2>
-    <select id="goal">
-      <option>Speaking</option>
-      <option>Writing</option>
-      <option>IELTS</option>
-    </select>
-    <button onclick="saveProfile('student')">Continue to Teachers →</button>
-  </div>
-
-  <!-- Teacher Profile -->
-  <div id="teacher-profile" class="page">
-    <h2>Your Teacher Profile</h2>
-    <textarea id="bio" placeholder="Tell students about your experience, teaching style..."></textarea>
-    <p><strong>Subjects you teach:</strong></p>
-    <select id="subjects" multiple size="3">
-      <option>Speaking</option>
-      <option>Writing</option>
-      <option>IELTS</option>
-    </select>
-    <p><strong>Availability:</strong></p>
-    <select id="availability">
-      <option>Morning</option>
-      <option>Afternoon</option>
-      <option>Evening</option>
-      <option>Flexible</option>
-    </select>
-    <button onclick="saveProfile('teacher')">Go Online →</button>
-  </div>
-
-  <!-- Student Marketplace -->
-  <div id="student-market" class="page">
-    <h2>Available Teachers</h2>
-    <div id="teachers-list">Loading teachers...</div>
-    <button class="back-btn" onclick="showPage('landing')">← Back</button>
-  </div>
-
-  <!-- Teacher Dashboard -->
-  <div id="teacher-dashboard" class="page">
-    <h2>Incoming Requests</h2>
-    <div id="requests-list">No requests yet.</div>
-    <button class="back-btn" onclick="showPage('landing')">← Back</button>
-  </div>
+  <div class="user-info" id="user-info">Welcome!</div>
+  <h1>🔍 Find Your Teacher</h1>
+  <div id="teachers-list"></div>
 
   <script>
     Telegram.WebApp.ready();
     Telegram.WebApp.expand();
 
     const user = Telegram.WebApp.initDataUnsafe.user || {};
-    let myRole = null;
+    document.getElementById('user-info').innerText = 
+      `Hey ${user.first_name || 'Student'}! Here are your available teachers 👇`;
 
-    function chooseRole(role) {
-      myRole = role;
-      showPage(role + '-profile');
-    }
-
-    function showPage(id) {
-      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-      document.getElementById(id).classList.add('active');
-
-      if (id === 'student-market' || id === 'teacher-dashboard') {
-        requestData();
+    // === HARD-CODED REAL TEACHERS ===
+    // Add / edit teachers here. Use their real Telegram user ID as "id"
+    // For photos: upload photo in bot → get permanent URL from logs → paste here
+    const teachers = [
+      {
+        id: "123456789", // Replace with real teacher Telegram ID
+        name: "Alex Rivera",
+        subjects: ["Speaking", "IELTS"],
+        availability: "Evening",
+        bio: "Native UK speaker with 8+ years helping students reach Band 7+.",
+        photo_url: null // Replace with "https://api.telegram.org/file/bot.../photo.jpg" if you have one
+      },
+      {
+        id: "987654321",
+        name: "Maria Chen",
+        subjects: ["Writing", "Speaking"],
+        availability: "Morning & Afternoon",
+        bio: "Certified teacher specializing in essay structure and fluent conversation.",
+        photo_url: null
+      },
+      {
+        id: "555666777",
+        name: "John Kim",
+        subjects: ["IELTS", "Writing"],
+        availability: "Evening",
+        bio: "Former IELTS examiner. I know exactly what they look for!",
+        photo_url: null
       }
+      // Add more teachers as needed
+    ];
+
+    const list = document.getElementById('teachers-list');
+
+    if (teachers.length === 0) {
+      list.innerHTML = '<p style="text-align:center; padding:50px;">😔 No teachers available yet. Check back soon!</p>';
+    } else {
+      teachers.forEach(teacher => {
+        const card = document.createElement('div');
+        card.className = 'card';
+
+        const photoHtml = teacher.photo_url 
+          ? `<img src="${teacher.photo_url}" class="photo" alt="${teacher.name}">`
+          : `<div class="no-photo">👤</div>`;
+
+        card.innerHTML = `
+          ${photoHtml}
+          <div class="name">🧑‍🏫 ${teacher.name}</div>
+          <div class="detail"><strong>Subjects:</strong> ${teacher.subjects.join(', ')}</div>
+          <div class="detail"><strong>Available:</strong> ${teacher.availability}</div>
+          <div class="detail bio">${teacher.bio}</div>
+          <button class="connect-btn" data-tid="${teacher.id}">🤝 Connect Now</button>
+        `;
+
+        list.appendChild(card);
+      });
     }
 
-    function saveProfile(role) {
-      let profile = {};
-      if (role === 'student') {
-        profile.goal = document.getElementById('goal').value;
-        showPage('student-market');
-      } else {
-        profile.bio = document.getElementById('bio').value || "No bio yet.";
-        profile.subjects = Array.from(document.getElementById('subjects').selectedOptions).map(o => o.value);
-        profile.availability = document.getElementById('availability').value;
-        showPage('teacher-dashboard');
-      }
+    // Connect button handler — works perfectly
+    document.querySelectorAll('.connect-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tid = btn.dataset.tid;
+        Telegram.WebApp.sendData(JSON.stringify({
+          action: "send_request",
+          teacher_id: tid,
+          student_name: user.first_name || "Student"
+        }));
 
-      Telegram.WebApp.sendData(JSON.stringify({
-        action: "save_profile",
-        role: role,
-        profile: profile
-      }));
-    }
-
-    function requestData() {
-      Telegram.WebApp.sendData(JSON.stringify({ action: "get_all_data" }));
-    }
-
-    Telegram.WebApp.onEvent('web_app_data_received', (data) => {
-      try {
-        const res = JSON.parse(data);
-        const teachers = Object.entries(res.teachers || {}).map(([id, t]) => ({id, ...t}));
-
-        if (myRole === 'student') {
-          const myGoal = res.students?.[user.id]?.goal;
-          const matches = myGoal ? teachers.filter(t => t.subjects.includes(myGoal)) : [];
-          renderTeachers(matches);
-        } else if (myRole === 'teacher') {
-          const myRequests = res.my_requests || [];
-          renderRequests(myRequests);
-        }
-      } catch (e) {
-        console.error("Data parse error:", e);
-      }
+        btn.innerText = "✅ Request Sent!";
+        btn.disabled = true;
+        btn.style.opacity = "0.7";
+      });
     });
-
-    function renderTeachers(teachers) {
-      const list = document.getElementById('teachers-list');
-      if (teachers.length === 0) {
-        list.innerHTML = "<p style='text-align:center;'>😔 No teachers available for your goal yet.<br>Check back soon!</p>";
-        return;
-      }
-      list.innerHTML = teachers.map(t => `
-        <div class="card">
-          ${t.photo_url ? `<img src="${t.photo_url}" class="photo">` : `<div class="no-photo">👤</div>`}
-          <h3>${t.name}</h3>
-          <p><strong>Teaches:</strong> ${t.subjects.join(', ')}</p>
-          <p><strong>Available:</strong> ${t.availability}</p>
-          <p><i>${t.bio}</i></p>
-          <button onclick="connect('${t.id}')">🤝 Connect</button>
-        </div>
-      `).join('');
-    }
-
-    function renderRequests(requests) {
-      const list = document.getElementById('requests-list');
-      if (requests.length === 0) {
-        list.innerHTML = "<p style='text-align:center;'>No requests yet. Students will find you soon!</p>";
-        return;
-      }
-      list.innerHTML = requests.map(r => `
-        <div class="card">
-          <p><strong>${r.student_name}</strong> (@${r.username}) wants to learn with you!</p>
-          <button onclick="Telegram.WebApp.openTelegramLink('https://t.me/${r.username}')">💬 Message Them</button>
-        </div>
-      `).join('');
-    }
-
-    function connect(teacherId) {
-      Telegram.WebApp.sendData(JSON.stringify({
-        action: "send_request",
-        teacher_id: teacherId,
-        student_name: user.first_name || "Student"
-      }));
-    }
   </script>
 </body>
 </html>
