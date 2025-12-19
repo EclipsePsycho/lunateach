@@ -15,7 +15,7 @@
     .card { background: var(--tg-theme-secondary-bg-color); border-radius: 16px; padding: 20px; margin: 16px 0; box-shadow: 0 4px 15px rgba(0,0,0,0.2); text-align: center; }
     .photo { width: 100%; height: 250px; object-fit: cover; border-radius: 12px; margin-bottom: 16px; }
     .no-photo { width: 100%; height: 250px; background: #333; opacity: 0.3; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 4em; margin-bottom: 16px; }
-    .back-btn { background: var(--tg-theme-hint-color); font-size: 1em; padding: 10px; }
+    .back-btn { background: var(--tg-theme-hint-color); font-size: 1em; padding: 10px; margin-top: 20px; }
   </style>
 </head>
 <body>
@@ -23,7 +23,7 @@
   <!-- Landing -->
   <div id="landing" class="page active">
     <h1>🌙 LunaTeach</h1>
-    <p style="text-align:center;">Connect with teachers or students instantly</p>
+    <p style="text-align:center; font-size:1.1em;">Master English — Speaking, Writing, IELTS</p>
     <button onclick="chooseRole('student')">🎓 I'm a Student</button>
     <button onclick="chooseRole('teacher')">🧑‍🏫 I'm a Teacher</button>
   </div>
@@ -36,13 +36,13 @@
       <option>Writing</option>
       <option>IELTS</option>
     </select>
-    <button onclick="saveProfile('student')">Continue →</button>
+    <button onclick="saveProfile('student')">Continue to Teachers →</button>
   </div>
 
   <!-- Teacher Profile -->
   <div id="teacher-profile" class="page">
-    <h2>Tell Students About You</h2>
-    <textarea id="bio" placeholder="Your experience, style, what makes you unique..."></textarea>
+    <h2>Your Teacher Profile</h2>
+    <textarea id="bio" placeholder="Tell students about your experience, teaching style..."></textarea>
     <p><strong>Subjects you teach:</strong></p>
     <select id="subjects" multiple size="3">
       <option>Speaking</option>
@@ -56,19 +56,19 @@
       <option>Evening</option>
       <option>Flexible</option>
     </select>
-    <button onclick="saveProfile('teacher')">Save & Go Online →</button>
+    <button onclick="saveProfile('teacher')">Go Online →</button>
   </div>
 
   <!-- Student Marketplace -->
   <div id="student-market" class="page">
     <h2>Available Teachers</h2>
-    <div id="teachers-list">Loading...</div>
+    <div id="teachers-list">Loading teachers...</div>
     <button class="back-btn" onclick="showPage('landing')">← Back</button>
   </div>
 
   <!-- Teacher Dashboard -->
   <div id="teacher-dashboard" class="page">
-    <h2>Your Student Requests</h2>
+    <h2>Incoming Requests</h2>
     <div id="requests-list">No requests yet.</div>
     <button class="back-btn" onclick="showPage('landing')">← Back</button>
   </div>
@@ -79,8 +79,6 @@
 
     const user = Telegram.WebApp.initDataUnsafe.user || {};
     let myRole = null;
-    let allTeachers = [];
-    let myRequests = [];
 
     function chooseRole(role) {
       myRole = role;
@@ -91,8 +89,9 @@
       document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
       document.getElementById(id).classList.add('active');
 
-      if (id === 'student-market') loadTeachers();
-      if (id === 'teacher-dashboard') loadRequests();
+      if (id === 'student-market' || id === 'teacher-dashboard') {
+        requestData();
+      }
     }
 
     function saveProfile(role) {
@@ -101,7 +100,7 @@
         profile.goal = document.getElementById('goal').value;
         showPage('student-market');
       } else {
-        profile.bio = document.getElementById('bio').value;
+        profile.bio = document.getElementById('bio').value || "No bio yet.";
         profile.subjects = Array.from(document.getElementById('subjects').selectedOptions).map(o => o.value);
         profile.availability = document.getElementById('availability').value;
         showPage('teacher-dashboard');
@@ -114,32 +113,32 @@
       }));
     }
 
-    function loadTeachers() {
-      Telegram.WebApp.sendData(JSON.stringify({ action: "get_all_data" }));
-    }
-
-    function loadRequests() {
+    function requestData() {
       Telegram.WebApp.sendData(JSON.stringify({ action: "get_all_data" }));
     }
 
     Telegram.WebApp.onEvent('web_app_data_received', (data) => {
-      const res = JSON.parse(data);
-      allTeachers = Object.entries(res.teachers || {}).map(([id, t]) => ({id, ...t}));
+      try {
+        const res = JSON.parse(data);
+        const teachers = Object.entries(res.teachers || {}).map(([id, t]) => ({id, ...t}));
 
-      if (myRole === 'student') {
-        const goal = (res.students || {})[user.id]?.goal || "Speaking";
-        const matches = allTeachers.filter(t => t.subjects.includes(goal));
-        renderTeachers(matches);
-      } else if (myRole === 'teacher') {
-        myRequests = res.my_requests || [];
-        renderRequests(myRequests);
+        if (myRole === 'student') {
+          const myGoal = res.students?.[user.id]?.goal;
+          const matches = myGoal ? teachers.filter(t => t.subjects.includes(myGoal)) : [];
+          renderTeachers(matches);
+        } else if (myRole === 'teacher') {
+          const myRequests = res.my_requests || [];
+          renderRequests(myRequests);
+        }
+      } catch (e) {
+        console.error("Data parse error:", e);
       }
     });
 
     function renderTeachers(teachers) {
       const list = document.getElementById('teachers-list');
       if (teachers.length === 0) {
-        list.innerHTML = "<p>No teachers available for your goal yet.</p>";
+        list.innerHTML = "<p style='text-align:center;'>😔 No teachers available for your goal yet.<br>Check back soon!</p>";
         return;
       }
       list.innerHTML = teachers.map(t => `
@@ -148,8 +147,8 @@
           <h3>${t.name}</h3>
           <p><strong>Teaches:</strong> ${t.subjects.join(', ')}</p>
           <p><strong>Available:</strong> ${t.availability}</p>
-          <p><i>${t.bio || 'No bio'}</i></p>
-          <button onclick="connect('${t.id}', '${t.name}')">🤝 Connect</button>
+          <p><i>${t.bio}</i></p>
+          <button onclick="connect('${t.id}')">🤝 Connect</button>
         </div>
       `).join('');
     }
@@ -157,22 +156,22 @@
     function renderRequests(requests) {
       const list = document.getElementById('requests-list');
       if (requests.length === 0) {
-        list.innerHTML = "<p>No requests yet. Share your profile!</p>";
+        list.innerHTML = "<p style='text-align:center;'>No requests yet. Students will find you soon!</p>";
         return;
       }
       list.innerHTML = requests.map(r => `
         <div class="card">
           <p><strong>${r.student_name}</strong> (@${r.username}) wants to learn with you!</p>
-          <button onclick="Telegram.WebApp.openTelegramLink('https://t.me/${r.username}')">Message Them</button>
+          <button onclick="Telegram.WebApp.openTelegramLink('https://t.me/${r.username}')">💬 Message Them</button>
         </div>
       `).join('');
     }
 
-    function connect(teacherId, teacherName) {
+    function connect(teacherId) {
       Telegram.WebApp.sendData(JSON.stringify({
         action: "send_request",
         teacher_id: teacherId,
-        student_name: user.first_name
+        student_name: user.first_name || "Student"
       }));
     }
   </script>
